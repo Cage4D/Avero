@@ -97,6 +97,6 @@ migrations (`pnpm --filter @avero/api db:deploy`).
 ## Credits
 
 - Brand, 3D and frontend: Cage4D ([github.com/cage4D](https://github.com/cage4D))
-- Backend: [partner handle]
+- Backend: hckerson ([github.com/hckerson](https://github.com/hckerson))
 
 AVERO is a fictional concept created for portfolio purposes.
