@@ -1,0 +1,10 @@
+{
+  "extends": "@avero/config/tsconfig/nestjs.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": ".",
+    "types": ["node", "jest"]
+  },
+  "include": ["src", "test", "scripts", "prisma"],
+  "exclude": ["node_modules", "dist"]
+}

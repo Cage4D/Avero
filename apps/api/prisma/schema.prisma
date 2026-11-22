@@ -1,0 +1,27 @@
+// Minimal starter schema. The backend developer owns the full data model.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+// Connection URLs live in prisma.config.ts (CLI / migrations: DIRECT_URL)
+// and src/prisma/prisma.service.ts (runtime: pooled DATABASE_URL).
+datasource db {
+  provider = "postgresql"
+}
+
+enum ModelStatus {
+  live
+  teaser
+}
+
+model Model {
+  id        String      @id @default(cuid())
+  code      String      @unique
+  name      String
+  tagline   String?
+  status    ModelStatus
+  sortOrder Int
+}
