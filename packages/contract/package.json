@@ -1,0 +1,20 @@
+{
+  "name": "@avero/contract",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "openapi-typescript ./openapi.json -o ./src/generated/api.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@avero/config": "workspace:*",
+    "eslint": "9.39.5",
+    "openapi-typescript": "7.13.0",
+    "typescript": "6.0.3"
+  }
+}
