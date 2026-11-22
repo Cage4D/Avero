@@ -1,0 +1,15 @@
+/*
+ * AVERO design tokens.
+ * PLACEHOLDER values: the final palette will be defined during brand work.
+ */
+:root {
+  --color-obsidian: #0b0b0d; /* placeholder: obsidian black */
+  --color-graphite: #2b2d31; /* placeholder: graphite */
+  --color-titanium: #b8bcc2; /* placeholder: titanium silver */
+  --color-ivory: #f4efe6; /* placeholder: warm ivory */
+  --color-champagne: #c8ad7f; /* placeholder: brushed champagne accent */
+
+  --color-bg: var(--color-obsidian);
+  --color-fg: var(--color-ivory);
+  --color-accent: var(--color-champagne);
+}

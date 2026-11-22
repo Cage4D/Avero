@@ -1,0 +1,14 @@
+.viewer {
+  width: 100vw;
+  height: 100vh;
+}
+
+.panel {
+  padding: 2rem;
+}
+
+.json {
+  padding: 1rem;
+  overflow-x: auto;
+  background: var(--color-graphite);
+}
