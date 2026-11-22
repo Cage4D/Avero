@@ -1,0 +1,102 @@
+# AVERO
+
+AVERO is a fictional luxury automotive brand, built as a portfolio project. The site pairs an
+immersive 3D frontend (Next.js + React Three Fiber) with a typed NestJS API, sharing one
+OpenAPI-generated contract so the frontend and backend never drift apart.
+
+> AVERO is a fictional concept. It is not a real company, and none of its vehicles exist.
+
+## Structure
+
+```
+avero/
+├─ apps/
+│  ├─ web/        Next.js (App Router): frontend + 3D
+│  └─ api/        NestJS + Prisma + PostgreSQL: REST API under /api/v1
+├─ packages/
+│  ├─ contract/   Types generated from the API's OpenAPI document + optionCodes.ts
+│  └─ config/     Shared tsconfig, ESLint (flat) and Prettier config
+├─ scripts/       Setup / bootstrap scripts
+└─ .github/       CI workflow
+```
+
+Tasks are orchestrated by [Turborepo](https://turborepo.com) on top of pnpm workspaces.
+
+## Prerequisites
+
+- Node.js 24 LTS (version pinned in `.nvmrc`, so run `nvm use`)
+- pnpm 12 (`npm install -g pnpm`)
+- Docker (for the local Postgres 16 database)
+
+## Setup
+
+```bash
+./scripts/setup.sh
+```
+
+The script checks your Node version, installs dependencies, creates `.env` files from the
+`.env.example` files, starts Postgres with Docker Compose, applies migrations, seeds the database
+and generates the contract.
+
+## Running
+
+```bash
+pnpm dev
+```
+
+- Web: http://localhost:3000 (lab routes: `/lab/viewer`, `/lab/api`)
+- API: http://localhost:4000/api/v1 (Swagger UI: http://localhost:4000/api/v1/docs)
+
+| Script                   | What it does                                      |
+| ------------------------ | ------------------------------------------------- |
+| `pnpm dev`               | Runs web and api in parallel                      |
+| `pnpm build`             | Builds every app                                  |
+| `pnpm lint`              | ESLint across the workspace                       |
+| `pnpm typecheck`         | TypeScript checks across the workspace            |
+| `pnpm test`              | Runs tests (API e2e with Jest + Supertest)        |
+| `pnpm format`            | Formats everything with Prettier                  |
+| `pnpm contract:generate` | Regenerates `packages/contract` from the API      |
+| `pnpm db:migrate`        | Creates/applies Prisma migrations (`migrate dev`) |
+| `pnpm db:seed`           | Seeds the database                                |
+
+## Regenerating the contract
+
+Whenever an API endpoint or DTO changes:
+
+```bash
+pnpm contract:generate
+```
+
+This exports the API's OpenAPI document to `packages/contract/openapi.json` and runs
+`openapi-typescript` to produce `packages/contract/src/generated/api.ts`. Commit both files. CI
+fails if the committed contract doesn't match what the API generates.
+
+## Deployment
+
+Both apps deploy to Vercel as **two separate projects from this one repository**:
+
+| Vercel project | Root Directory | Notes                                                                                |
+| -------------- | -------------- | ------------------------------------------------------------------------------------ |
+| web            | `apps/web`     | Set `API_URL` and `NEXT_PUBLIC_SITE_URL`                                             |
+| api            | `apps/api`     | Zero-config NestJS (`src/main.ts`). Set `DATABASE_URL`, `DIRECT_URL`, `CORS_ORIGINS` |
+
+The database is a Vercel Marketplace Postgres (Neon or Prisma Postgres). `DATABASE_URL` is the
+pooled connection used at runtime; `DIRECT_URL` is the direct connection used by Prisma
+migrations (`pnpm --filter @avero/api db:deploy`).
+
+## Git conventions
+
+- `main` always holds both apps and must stay deployable.
+- Work happens on short-lived branches named `feat/…`, `fix/…` or `chore/…`, merged by pull
+  request within a few days, then deleted.
+- Anything touching `packages/contract` or the Prisma schema (`apps/api/prisma`) needs review from
+  the other developer.
+- Commit messages follow [Conventional Commits](https://www.conventionalcommits.org)
+  (`feat(web): …`, `fix(api): …`, `chore: …`).
+
+## Credits
+
+- Brand, 3D and frontend: Cage4D ([github.com/cage4D](https://github.com/cage4D))
+- Backend: [partner handle]
+
+AVERO is a fictional concept created for portfolio purposes.
