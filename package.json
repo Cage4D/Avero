@@ -1,0 +1,26 @@
+{
+  "name": "avero",
+  "private": true,
+  "packageManager": "pnpm@12.21.0",
+  "engines": {
+    "node": ">=24.22.3 <25",
+    "pnpm": ">=12.21.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev --parallel --filter=@avero/web --filter=@avero/api",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "contract:generate": "pnpm --filter @avero/api openapi:export && pnpm --filter @avero/contract generate",
+    "db:migrate": "pnpm --filter @avero/api db:migrate",
+    "db:seed": "pnpm --filter @avero/api db:seed"
+  },
+  "devDependencies": {
+    "@avero/config": "workspace:*",
+    "prettier": "3.10.1",
+    "turbo": "2.11.13"
+  }
+}

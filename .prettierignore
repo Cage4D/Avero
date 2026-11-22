@@ -1,0 +1,8 @@
+pnpm-lock.yaml
+.next
+dist
+coverage
+.turbo
+packages/contract/src/generated
+packages/contract/openapi.json
+apps/api/src/generated
