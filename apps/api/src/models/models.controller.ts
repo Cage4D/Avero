@@ -1,7 +1,7 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { ModelDto } from './dto/model.dto';
-import { ModelsService } from './models.service';
+import { ModelDto } from './dto/model.dto.js';
+import { ModelsService } from './models.service.js';
 
 @ApiTags('models')
 @Controller('models')

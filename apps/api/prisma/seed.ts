@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../src/generated/prisma/client';
+import { PrismaClient } from '../src/generated/prisma/client.js';
 
 if (existsSync('.env')) process.loadEnvFile('.env');
 

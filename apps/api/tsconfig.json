@@ -3,7 +3,13 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": ".",
-    "types": ["node", "jest"]
+    "types": ["node", "jest"],
+    // Vercel's Node builder type-checks this ESM package but resolves helmet to
+    // its CommonJS declarations, so `helmet()` fails to type-check there. Pin
+    // the ESM declarations that Node and local tsc already use.
+    "paths": {
+      "helmet": ["./node_modules/helmet/index.d.mts"]
+    }
   },
   "include": ["src", "test", "scripts", "prisma"],
   "exclude": ["node_modules", "dist"]

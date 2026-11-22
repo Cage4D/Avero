@@ -3,7 +3,7 @@
 generator client {
   provider     = "prisma-client"
   output       = "../src/generated/prisma"
-  moduleFormat = "cjs"
+  moduleFormat = "esm"
 }
 
 // Connection URLs live in prisma.config.ts (CLI / migrations: DIRECT_URL)
