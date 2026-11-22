@@ -73,16 +73,24 @@ fails if the committed contract doesn't match what the API generates.
 
 ## Deployment
 
-Both apps deploy to Vercel as **two separate projects from this one repository**:
+Both apps deploy to Vercel as **two separate projects from this one repository**. Every push to
+`main` deploys both to production; other branches get preview deployments.
 
-| Vercel project | Root Directory | Notes                                                                                |
-| -------------- | -------------- | ------------------------------------------------------------------------------------ |
-| web            | `apps/web`     | Set `API_URL` and `NEXT_PUBLIC_SITE_URL`                                             |
-| api            | `apps/api`     | Zero-config NestJS (`src/main.ts`). Set `DATABASE_URL`, `DIRECT_URL`, `CORS_ORIGINS` |
+| Vercel project | Root Directory | Live URL                                                                   | Notes                                                                                |
+| -------------- | -------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `avero-web`    | `apps/web`     | [avero-web-azure.vercel.app](https://avero-web-azure.vercel.app)           | Set `API_URL` and `NEXT_PUBLIC_SITE_URL`                                             |
+| `avero-api`    | `apps/api`     | [avero-api-psi.vercel.app/api/v1](https://avero-api-psi.vercel.app/api/v1) | Zero-config NestJS (`src/main.ts`). Set `DATABASE_URL`, `DIRECT_URL`, `CORS_ORIGINS` |
 
-The database is a Vercel Marketplace Postgres (Neon or Prisma Postgres). `DATABASE_URL` is the
-pooled connection used at runtime; `DIRECT_URL` is the direct connection used by Prisma
-migrations (`pnpm --filter @avero/api db:deploy`).
+The database is a Neon Postgres (`avero-db`) from the Vercel Marketplace, connected to
+`avero-api`. Neon provides `DATABASE_URL` (pooled, used at runtime) and `DATABASE_URL_UNPOOLED`;
+`DIRECT_URL` holds the unpooled value and is used by Prisma migrations. Migrations aren't run during
+the Vercel build. Apply them yourself with `DIRECT_URL` pointing at the production database:
+
+```bash
+pnpm --filter @avero/api db:deploy
+```
+
+On WSL, add `NODE_OPTIONS=--dns-result-order=ipv4first` if Prisma can't reach the Neon host.
 
 On **both** projects, also set `ENABLE_EXPERIMENTAL_COREPACK=1`. Without it, Vercel ignores the
 `packageManager` field and guesses an older pnpm version from the lockfile.
