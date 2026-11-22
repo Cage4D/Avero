@@ -25,3 +25,6 @@ apps/api/src/generated/
 # misc
 .DS_Store
 *.log
+
+# Swagger UI assets copied at build time (apps/api/scripts/copy-swagger-ui.mjs)
+apps/api/swagger-ui/

@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "nest start --watch",
-    "build": "prisma generate && nest build",
+    "dev": "node scripts/copy-swagger-ui.mjs && nest start --watch",
+    "build": "prisma generate && node scripts/copy-swagger-ui.mjs && nest build",
     "start": "node dist/main.js",
     "lint": "eslint .",
     "typecheck": "prisma generate && tsc --noEmit",

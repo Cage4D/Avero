@@ -84,6 +84,13 @@ The database is a Vercel Marketplace Postgres (Neon or Prisma Postgres). `DATABA
 pooled connection used at runtime; `DIRECT_URL` is the direct connection used by Prisma
 migrations (`pnpm --filter @avero/api db:deploy`).
 
+On **both** projects, also set `ENABLE_EXPERIMENTAL_COREPACK=1`. Without it, Vercel ignores the
+`packageManager` field and guesses an older pnpm version from the lockfile.
+
+The API's build copies the Swagger UI assets into `apps/api/swagger-ui/` (gitignored), and
+`src/main.ts` serves them from there. Vercel can't trace the files `@nestjs/swagger` reads from
+`node_modules` at runtime, so without this `/api/v1/docs` would load a blank page.
+
 ## Git conventions
 
 - `main` always holds both apps and must stay deployable.
