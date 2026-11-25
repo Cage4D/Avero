@@ -1,10 +1,22 @@
 import { Module } from '@nestjs/common';
-import { HealthController } from './health/health.controller.js';
-import { ModelsModule } from './models/models.module.js';
-import { PrismaModule } from './prisma/prisma.module.js';
+import { ConfigModule } from '@nestjs/config';
+import { validateEnv } from './common/config/env.validation.js';
+import { PrismaModule } from './common/database/prisma.module.js';
+import { RepoModule } from './common/repos/repo.module.js';
+import { AuthModule } from './modules/core/auth/auth.module.js';
+import { HealthModule } from './modules/core/health/health.module.js';
+import { StatsModule } from './modules/core/stats/stats.module.js';
+import { UsersModule } from './modules/core/users/users.module.js';
 
 @Module({
-  imports: [PrismaModule, ModelsModule],
-  controllers: [HealthController],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
+    PrismaModule,
+    RepoModule,
+    AuthModule,
+    UsersModule,
+    HealthModule,
+    StatsModule,
+  ],
 })
 export class AppModule {}
