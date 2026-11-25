@@ -35,7 +35,7 @@ Tasks are orchestrated by [Turborepo](https://turborepo.com) on top of pnpm work
 ```
 
 The script checks your Node version, installs dependencies, creates `.env` files from the
-`.env.example` files, starts Postgres with Docker Compose, applies migrations, seeds the database
+`.env.example` files, generates the API's JWT keys, starts Postgres with Docker Compose, applies migrations, seeds the database
 and generates the contract.
 
 ## Running
@@ -47,17 +47,34 @@ pnpm dev
 - Web: http://localhost:3000 (lab routes: `/lab/viewer`, `/lab/api`)
 - API: http://localhost:4000/api/v1 (Swagger UI: http://localhost:4000/api/v1/docs)
 
-| Script                   | What it does                                      |
-| ------------------------ | ------------------------------------------------- |
-| `pnpm dev`               | Runs web and api in parallel                      |
-| `pnpm build`             | Builds every app                                  |
-| `pnpm lint`              | ESLint across the workspace                       |
-| `pnpm typecheck`         | TypeScript checks across the workspace            |
-| `pnpm test`              | Runs tests (API e2e with Jest + Supertest)        |
-| `pnpm format`            | Formats everything with Prettier                  |
-| `pnpm contract:generate` | Regenerates `packages/contract` from the API      |
-| `pnpm db:migrate`        | Creates/applies Prisma migrations (`migrate dev`) |
-| `pnpm db:seed`           | Seeds the database                                |
+The seed creates `admin@example.com` / `password123` plus 20 random users.
+
+### API routes
+
+Every response is wrapped in `{ statusCode, message, data, timestamp }`. Auth is an RS256 JWT sent
+as `Authorization: Bearer <token>`.
+
+| Module   | Routes (under `/api/v1`)                                        |
+| -------- | --------------------------------------------------------------- |
+| `auth`   | `POST /auth/register`, `POST /auth/login`                       |
+| `users`  | CRUD on `/users` (create, list, delete: admin), `GET /users/me` |
+| `stats`  | `GET /stats/users/total`, `GET /stats/users/series` (admin)     |
+| `health` | `GET /health`                                                   |
+
+The API's layering rules live in [`apps/api/CLAUDE.md`](apps/api/CLAUDE.md).
+
+| Script                                   | What it does                                          |
+| ---------------------------------------- | ----------------------------------------------------- |
+| `pnpm dev`                               | Runs web and api in parallel                          |
+| `pnpm build`                             | Builds every app                                      |
+| `pnpm lint`                              | ESLint across the workspace                           |
+| `pnpm typecheck`                         | TypeScript checks across the workspace                |
+| `pnpm test`                              | Runs tests (API e2e with Jest + Supertest)            |
+| `pnpm format`                            | Formats everything with Prettier                      |
+| `pnpm contract:generate`                 | Regenerates `packages/contract` from the API          |
+| `pnpm db:migrate`                        | Creates/applies Prisma migrations (`migrate dev`)     |
+| `pnpm db:seed`                           | Seeds the database                                    |
+| `pnpm --filter @avero/api keys:generate` | Prints a fresh RS256 JWT key pair for `apps/api/.env` |
 
 ## Regenerating the contract
 
@@ -76,10 +93,10 @@ fails if the committed contract doesn't match what the API generates.
 Both apps deploy to Vercel as **two separate projects from this one repository**. Every push to
 `main` deploys both to production; other branches get preview deployments.
 
-| Vercel project | Root Directory | Live URL                                                                   | Notes                                                                                |
-| -------------- | -------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `avero-web`    | `apps/web`     | [avero-web-azure.vercel.app](https://avero-web-azure.vercel.app)           | Set `API_URL` and `NEXT_PUBLIC_SITE_URL`                                             |
-| `avero-api`    | `apps/api`     | [avero-api-psi.vercel.app/api/v1](https://avero-api-psi.vercel.app/api/v1) | Zero-config NestJS (`src/main.ts`). Set `DATABASE_URL`, `DIRECT_URL`, `CORS_ORIGINS` |
+| Vercel project | Root Directory | Live URL                                                                   | Notes                                                                                                                     |
+| -------------- | -------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `avero-web`    | `apps/web`     | [avero-web-azure.vercel.app](https://avero-web-azure.vercel.app)           | Set `API_URL` and `NEXT_PUBLIC_SITE_URL`                                                                                  |
+| `avero-api`    | `apps/api`     | [avero-api-psi.vercel.app/api/v1](https://avero-api-psi.vercel.app/api/v1) | Zero-config NestJS (`src/main.ts`). Set `DATABASE_URL`, `DIRECT_URL`, `CORS_ORIGINS`, `JWT_PRIVATE_KEY`, `JWT_PUBLIC_KEY` |
 
 The database is a Neon Postgres (`avero-db`) from the Vercel Marketplace, connected to
 `avero-api`. Neon provides `DATABASE_URL` (pooled, used at runtime) and `DATABASE_URL_UNPOOLED`;
