@@ -4,6 +4,94 @@
  */
 
 export interface paths {
+    "/api/v1/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register a new user */
+        post: operations["AuthController_register"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Log in and get a JWT */
+        post: operations["AuthController_login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get all users (Admin only) */
+        get: operations["UsersController_findAll"];
+        put?: never;
+        /** Create a new user (Admin only) */
+        post: operations["UsersController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the current user profile */
+        get: operations["UsersController_getMe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a user by ID */
+        get: operations["UsersController_findOne"];
+        put?: never;
+        post?: never;
+        /** Delete a user (Admin only) */
+        delete: operations["UsersController_remove"];
+        options?: never;
+        head?: never;
+        /** Update a user profile */
+        patch: operations["UsersController_update"];
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -11,6 +99,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** Report that the API is up */
         get: operations["HealthController_check"];
         put?: never;
         post?: never;
@@ -20,14 +109,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/models/{code}": {
+    "/api/v1/stats/users/total": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["ModelsController_findOne"];
+        /** Users created in one day, month or year (Admin only) */
+        get: operations["StatsController_usersTotal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stats/users/series": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Users created per day, month or year up to the current one (Admin only) */
+        get: operations["StatsController_usersSeries"];
         put?: never;
         post?: never;
         delete?: never;
@@ -40,24 +147,116 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        HealthDto: {
-            /**
-             * @example ok
-             * @enum {string}
-             */
-            status: "ok";
+        ApiEnvelopeDto: {
+            statusCode: number;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
         };
         /** @enum {string} */
-        ModelStatus: "live" | "teaser";
-        ModelDto: {
+        UserRole: "ADMIN" | "USER";
+        AuthResponseUserDto: {
             id: string;
-            /** @example gt */
-            code: string;
-            /** @example AVERO GT */
             name: string;
-            tagline: string | null;
-            status: components["schemas"]["ModelStatus"];
-            sortOrder: number;
+            /** Format: email */
+            email: string;
+            role: components["schemas"]["UserRole"];
+        };
+        AuthResponseDto: {
+            user: components["schemas"]["AuthResponseUserDto"];
+            accessToken: string;
+        };
+        RegisterDto: {
+            /** @example John Doe */
+            fullName: string;
+            /** @example john@example.com */
+            email: string;
+            /** @example password123 */
+            password: string;
+            /** @example +1234567890 */
+            phoneNumber?: string;
+        };
+        LoginDto: {
+            /** @example admin@example.com */
+            email: string;
+            /** @example password123 */
+            password: string;
+        };
+        /** @enum {string} */
+        UserAccountStatus: "ACTIVE" | "PENDING" | "SUSPENDED";
+        UserResponseDto: {
+            id: string;
+            fullName: string;
+            /** Format: email */
+            email: string;
+            phoneNumber: string | null;
+            avatar: string | null;
+            bio: string | null;
+            role: components["schemas"]["UserRole"];
+            status: components["schemas"]["UserAccountStatus"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            lastActive: string | null;
+        };
+        CreateUserDto: {
+            /** @example John Doe */
+            fullName: string;
+            /** @example john@example.com */
+            email: string;
+            /** @example password123 */
+            password: string;
+            /** @default USER */
+            role: components["schemas"]["UserRole"];
+            /** @example +1234567890 */
+            phoneNumber?: string;
+            /** @example Short profile bio */
+            bio?: string;
+        };
+        UpdateUserDto: {
+            /** @example John Doe */
+            fullName?: string;
+            /** @example john@example.com */
+            email?: string;
+            /** @example password123 */
+            password?: string;
+            /** @default USER */
+            role: components["schemas"]["UserRole"];
+            /** @example +1234567890 */
+            phoneNumber?: string;
+            /** @example Short profile bio */
+            bio?: string;
+            status?: components["schemas"]["UserAccountStatus"];
+        };
+        /** @enum {string} */
+        HealthStatus: "ok";
+        HealthResponseDto: {
+            status: components["schemas"]["HealthStatus"];
+        };
+        /** @enum {string} */
+        Period: "day" | "month" | "year";
+        PeriodTotalResponseDto: {
+            period: components["schemas"]["Period"];
+            /** Format: date-time */
+            start: string;
+            /** Format: date-time */
+            end: string;
+            total: number;
+        };
+        SeriesPointDto: {
+            /** @example 2026-09 */
+            key: string;
+            value: number;
+        };
+        PeriodSeriesResponseDto: {
+            period: components["schemas"]["Period"];
+            /** Format: date-time */
+            start: string;
+            /** Format: date-time */
+            end: string;
+            points: components["schemas"]["SeriesPointDto"][];
         };
     };
     responses: never;
@@ -68,6 +267,259 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    AuthController_register: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiEnvelopeDto"] & {
+                        data: components["schemas"]["AuthResponseDto"];
+                    };
+                };
+            };
+            /** @description User already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiEnvelopeDto"] & {
+                        data: components["schemas"]["AuthResponseDto"];
+                    };
+                };
+            };
+            /** @description Invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UsersController_findAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiEnvelopeDto"] & {
+                        data: components["schemas"]["UserResponseDto"][];
+                    };
+                };
+            };
+        };
+    };
+    UsersController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateUserDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiEnvelopeDto"] & {
+                        data: components["schemas"]["UserResponseDto"];
+                    };
+                };
+            };
+            /** @description User already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UsersController_getMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiEnvelopeDto"] & {
+                        data: components["schemas"]["UserResponseDto"];
+                    };
+                };
+            };
+            /** @description User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UsersController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiEnvelopeDto"] & {
+                        data: components["schemas"]["UserResponseDto"];
+                    };
+                };
+            };
+            /** @description User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UsersController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiEnvelopeDto"] & {
+                        data: components["schemas"]["UserResponseDto"];
+                    };
+                };
+            };
+            /** @description User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UsersController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateUserDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiEnvelopeDto"] & {
+                        data: components["schemas"]["UserResponseDto"];
+                    };
+                };
+            };
+            /** @description You can only update your own profile. Only an admin can change role or status. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description User already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     HealthController_check: {
         parameters: {
             query?: never;
@@ -82,14 +534,20 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HealthDto"];
+                    "application/json": components["schemas"]["ApiEnvelopeDto"] & {
+                        data: components["schemas"]["HealthResponseDto"];
+                    };
                 };
             };
         };
     };
-    ModelsController_findOne: {
+    StatsController_usersTotal: {
         parameters: {
-            query?: never;
+            query: {
+                period: components["schemas"]["Period"];
+                /** @description Any instant inside the period. Defaults to now. */
+                date?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -101,15 +559,33 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ModelDto"];
+                    "application/json": components["schemas"]["ApiEnvelopeDto"] & {
+                        data: components["schemas"]["PeriodTotalResponseDto"];
+                    };
                 };
             };
-            /** @description No model with this code */
-            404: {
+        };
+    };
+    StatsController_usersSeries: {
+        parameters: {
+            query: {
+                period: components["schemas"]["Period"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ApiEnvelopeDto"] & {
+                        data: components["schemas"]["PeriodSeriesResponseDto"];
+                    };
+                };
             };
         };
     };
