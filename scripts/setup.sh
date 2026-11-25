@@ -33,6 +33,17 @@ for dir in apps/api apps/web; do
   fi
 done
 
+info "Generating JWT keys where missing"
+if grep -qE '^JWT_PRIVATE_KEY=$' apps/api/.env; then
+  keys="$(pnpm --filter @avero/api --silent keys:generate | grep -E '^JWT_(PRIVATE|PUBLIC)_KEY=')"
+  grep -vE '^JWT_(PRIVATE|PUBLIC)_KEY=' apps/api/.env > apps/api/.env.tmp
+  printf '%s\n' "$keys" >> apps/api/.env.tmp
+  mv apps/api/.env.tmp apps/api/.env
+  echo "wrote JWT_PRIVATE_KEY and JWT_PUBLIC_KEY to apps/api/.env"
+else
+  echo "kept existing JWT keys"
+fi
+
 info "Starting Postgres (docker compose)"
 command -v docker >/dev/null || fail "Docker is not installed. Install Docker or point DATABASE_URL/DIRECT_URL at your own Postgres and run 'pnpm db:migrate && pnpm db:seed'."
 docker compose up -d --wait postgres
