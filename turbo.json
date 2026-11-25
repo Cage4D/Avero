@@ -5,7 +5,15 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**", "swagger-ui/**"],
-      "env": ["API_URL", "NEXT_PUBLIC_SITE_URL", "DATABASE_URL", "DIRECT_URL", "CORS_ORIGINS"]
+      "env": [
+        "API_URL",
+        "NEXT_PUBLIC_SITE_URL",
+        "DATABASE_URL",
+        "DIRECT_URL",
+        "CORS_ORIGINS",
+        "JWT_PRIVATE_KEY",
+        "JWT_PUBLIC_KEY"
+      ]
     },
     "lint": {
       "dependsOn": ["^build"]
@@ -15,7 +23,7 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "env": ["DATABASE_URL", "CORS_ORIGINS"]
+      "env": ["DATABASE_URL", "CORS_ORIGINS", "JWT_PRIVATE_KEY", "JWT_PUBLIC_KEY"]
     },
     "dev": {
       "cache": false,
