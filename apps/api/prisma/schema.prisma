@@ -1,11 +1,9 @@
 generator client {
   provider     = "prisma-client"
-  output       = "../src/generated/prisma"
-  moduleFormat = "esm"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
 }
 
-// Connection URLs live in prisma.config.ts (CLI / migrations: DIRECT_URL)
-// and src/common/database/prisma.service.ts (runtime: pooled DATABASE_URL).
 datasource db {
   provider = "postgresql"
 }
@@ -36,5 +34,5 @@ model User {
   role         UserRole          @default(USER)
   status       UserAccountStatus @default(ACTIVE)
 
-  @@index([id, createdAt])
+  @@index([createdAt])
 }
