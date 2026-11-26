@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { HealthStatus } from '../../../common/enums/health.js';
-import { HealthResponseDto } from './dto/index.js';
+import { HealthResponseDto } from './dto';
+import { HealthStatus } from '@common/enums/health';
 
 @Injectable()
 export class HealthService {
-  check(): HealthResponseDto {
-    return { status: HealthStatus.OK };
-  }
+    check(): HealthResponseDto {
+        return { status: HealthStatus.OK };
+    }
 }

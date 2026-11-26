@@ -1,9 +1,9 @@
-import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum } from 'class-validator';
-import { Period } from '../../../../common/enums/period.js';
+import { ApiProperty } from '@nestjs/swagger';
+import { Period } from '@common/enums/period';
 
 export class SeriesQueryDto {
-  @ApiProperty({ enum: Period, enumName: 'Period' })
-  @IsEnum(Period)
-  period!: Period;
+    @ApiProperty({ enum: Period })
+    @IsEnum(Period)
+    period: Period;
 }

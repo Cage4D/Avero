@@ -1,43 +1,71 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { INVALID_CREDENTIALS } from '../../../common/enums/auth.js';
-import type { User } from '../../../generated/prisma/client.js';
-import { UsersService } from '../users/users.service.js';
-import { LoginDto, RegisterDto } from './dto/index.js';
-import type { AuthResponse, AuthUser, JwtPayload } from './types/auth.types.js';
-import { PasswordUtil } from './utils/password.util.js';
-
-type TokenSubject = Pick<User, 'id' | 'fullName' | 'email' | 'role'>;
+import { UserRole } from 'generated/prisma/client';
+import { PasswordUtil } from '@lib/password';
+import type { JwtPayload } from '@common/security';
+import { UsersService } from '@core/users/users.service';
+import type { AuthResponse } from './types/auth.types';
+import { LoginDto, RegisterDto } from './dto';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 
 @Injectable()
 export class AuthService {
-  constructor(
-    private readonly jwtService: JwtService,
-    private readonly usersService: UsersService,
-  ) {}
+    constructor(
+        private readonly jwtService: JwtService,
+        private readonly usersService: UsersService,
+    ) {}
 
-  async register(dto: RegisterDto): Promise<AuthResponse> {
-    return this.issue(await this.usersService.create(dto));
-  }
+    async register(dto: RegisterDto): Promise<AuthResponse> {
+        const user = await this.usersService.create(dto);
+        const accessToken = this.generateToken(user);
 
-  async login(dto: LoginDto): Promise<AuthResponse> {
-    return this.issue(await this.authenticate(dto.email, dto.password));
-  }
-
-  private issue(user: TokenSubject): AuthResponse {
-    const payload: JwtPayload = { sub: user.id, email: user.email, role: user.role };
-    return { user: this.toAuthUser(user), accessToken: this.jwtService.sign(payload) };
-  }
-
-  private toAuthUser(user: TokenSubject): AuthUser {
-    return { id: user.id, name: user.fullName, email: user.email, role: user.role };
-  }
-
-  private async authenticate(email: string, password: string): Promise<User> {
-    const user = await this.usersService.findByEmail(email);
-    if (!user || !(await PasswordUtil.compare(password, user.passwordHash))) {
-      throw new UnauthorizedException(INVALID_CREDENTIALS);
+        return { user: this.toAuthUser(user), accessToken };
     }
-    return user;
-  }
+
+    async login(dto: LoginDto): Promise<AuthResponse> {
+        const user = await this.authenticateUser(dto.email, dto.password);
+        const accessToken = this.generateToken(user);
+
+        return { user: this.toAuthUser(user), accessToken };
+    }
+
+    private toAuthUser(user: {
+        id: string;
+        fullName: string;
+        email: string;
+        role: UserRole;
+    }) {
+        return {
+            id: user.id,
+            name: user.fullName,
+            email: user.email,
+            role: user.role,
+        };
+    }
+
+    private generateToken(user: {
+        id: string;
+        email: string;
+        role: UserRole;
+    }): string {
+        const payload: JwtPayload = {
+            sub: user.id,
+            email: user.email,
+            role: user.role,
+        };
+        return this.jwtService.sign(payload);
+    }
+
+    private async authenticateUser(email: string, password: string) {
+        const user = await this.usersService.findByEmail(email);
+        if (!user) throw new UnauthorizedException('Invalid credentials');
+
+        const passwordValid = await PasswordUtil.compare(
+            password,
+            user.passwordHash,
+        );
+        if (!passwordValid)
+            throw new UnauthorizedException('Invalid credentials');
+
+        return user;
+    }
 }

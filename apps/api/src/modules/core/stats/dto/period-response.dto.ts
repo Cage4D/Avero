@@ -1,31 +1,31 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Period } from '../../../../common/enums/period.js';
+import { Period } from '@common/enums/period';
 
 export class PeriodBoundsDto {
-  @ApiProperty({ enum: Period, enumName: 'Period' })
-  period!: Period;
+    @ApiProperty({ enum: Period })
+    period: Period;
 
-  @ApiProperty({ format: 'date-time' })
-  start!: string;
+    @ApiProperty({ format: 'date-time' })
+    start: string;
 
-  @ApiProperty({ format: 'date-time' })
-  end!: string;
+    @ApiProperty({ format: 'date-time' })
+    end: string;
 }
 
 export class PeriodTotalResponseDto extends PeriodBoundsDto {
-  @ApiProperty()
-  total!: number;
+    @ApiProperty()
+    total: number;
 }
 
 export class SeriesPointDto {
-  @ApiProperty({ example: '2026-09' })
-  key!: string;
+    @ApiProperty({ example: '2026-09' })
+    key: string;
 
-  @ApiProperty()
-  value!: number;
+    @ApiProperty()
+    value: number;
 }
 
 export class PeriodSeriesResponseDto extends PeriodBoundsDto {
-  @ApiProperty({ type: [SeriesPointDto] })
-  points!: SeriesPointDto[];
+    @ApiProperty({ type: [SeriesPointDto] })
+    points: SeriesPointDto[];
 }

@@ -1,3 +1,3 @@
-export * from './series-query.dto.js';
-export * from './total-query.dto.js';
-export * from './period-response.dto.js';
+export * from './series-query.dto';
+export * from './total-query.dto';
+export * from './period-response.dto';

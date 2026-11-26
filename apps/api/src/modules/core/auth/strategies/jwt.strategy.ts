@@ -1,28 +1,33 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { JWT_ALGORITHM, publicKeyFrom } from '../../../../common/config/jwt-keys.js';
-import { UsersService } from '../../users/users.service.js';
-import type { AuthUser, JwtPayload } from '../types/auth.types.js';
+import { UsersService } from '@core/users/users.service';
+import type { AuthUser, JwtPayload } from '@common/security';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { JWT_ALGORITHM, publicKeyFrom } from '@common/config/jwt-keys';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(
-    config: ConfigService,
-    private readonly usersService: UsersService,
-  ) {
-    super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: false,
-      secretOrKey: publicKeyFrom(config),
-      algorithms: [JWT_ALGORITHM],
-    });
-  }
+    constructor(
+        configService: ConfigService,
+        private readonly usersService: UsersService,
+    ) {
+        super({
+            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+            ignoreExpiration: false,
+            secretOrKey: publicKeyFrom(configService),
+            algorithms: [JWT_ALGORITHM],
+        });
+    }
 
-  async validate(payload: JwtPayload): Promise<AuthUser> {
-    const user = await this.usersService.findById(payload.sub);
-    if (!user) throw new UnauthorizedException();
-    return { id: user.id, name: user.fullName, email: user.email, role: user.role };
-  }
+    async validate(payload: JwtPayload): Promise<AuthUser> {
+        const user = await this.usersService.findById(payload.sub);
+        if (!user) throw new UnauthorizedException();
+        return {
+            id: user.id,
+            role: user.role,
+            email: user.email,
+            name: user.fullName,
+        };
+    }
 }

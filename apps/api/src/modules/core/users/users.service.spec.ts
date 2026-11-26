@@ -1,174 +1,247 @@
-import { jest } from '@jest/globals';
-import {
-  ConflictException,
-  ForbiddenException,
-  HttpStatus,
-  NotFoundException,
-} from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { RECORD_NOT_FOUND, UNIQUE_VIOLATION } from '../../../common/enums/prisma.js';
-import { RepoError } from '../../../common/errors/repo.error.js';
-import { UserRepo } from '../../../common/repos/user.repo.js';
-import { Prisma } from '../../../generated/prisma/client.js';
-import { UserRole } from '../../../generated/prisma/enums.js';
-import type { AuthUser } from '../auth/types/auth.types.js';
-import { PasswordUtil } from '../auth/utils/password.util.js';
-import { UsersService } from './users.service.js';
+import {
+    ConflictException,
+    ForbiddenException,
+    HttpStatus,
+    NotFoundException,
+} from '@nestjs/common';
+import { Prisma } from 'generated/prisma/client';
+import { UserRole } from 'generated/prisma/enums';
+import { UserRepo } from '@common/repos/user.repo';
+import { CacheService } from '@common/cache/cache.service';
+import { STATS_CACHE_VERSION_KEY } from '@common/enums/cache';
+import { RepoError } from '@common/errors/repo.error';
+import { RECORD_NOT_FOUND, UNIQUE_VIOLATION } from '@common/enums/prisma';
+import { PasswordUtil } from '@lib/password';
+import type { AuthUser } from '@common/security';
+import { UsersService } from './users.service';
 
-const DTO = { fullName: 'Ada Lovelace', email: 'ada@example.com', password: 'correct-horse' };
+const DTO = {
+    fullName: 'Ada Lovelace',
+    email: 'ada@example.com',
+    password: 'correct-horse',
+};
 
 const MEMBER: AuthUser = {
-  id: 'usr_1',
-  name: 'Ada Lovelace',
-  email: 'ada@example.com',
-  role: UserRole.USER,
+    id: 'usr_1',
+    name: 'Ada Lovelace',
+    email: 'ada@example.com',
+    role: UserRole.USER,
 };
 
 const ADMIN: AuthUser = {
-  id: 'usr_9',
-  name: 'Admin User',
-  email: 'admin@example.com',
-  role: UserRole.ADMIN,
+    id: 'usr_9',
+    name: 'Admin User',
+    email: 'admin@example.com',
+    role: UserRole.ADMIN,
 };
 
-interface WriteParams {
-  where?: { id: string };
-  data: { passwordHash?: string; role?: UserRole };
-}
+type RepoMock = Partial<Record<keyof UserRepo, jest.Mock>>;
 
-const serviceWith = async (repo: Partial<Record<keyof UserRepo, unknown>>) => {
-  const moduleRef = await Test.createTestingModule({
-    providers: [UsersService, { provide: UserRepo, useValue: repo }],
-  }).compile();
-  return moduleRef.get(UsersService);
+const serviceWith = async (
+    repo: RepoMock,
+    incr = jest.fn().mockResolvedValue(1),
+) => {
+    const moduleRef = await Test.createTestingModule({
+        providers: [
+            UsersService,
+            { provide: UserRepo, useValue: repo },
+            { provide: CacheService, useValue: { incr } },
+        ],
+    }).compile();
+    return moduleRef.get(UsersService);
 };
 
 const prismaFailure = (code: string) =>
-  new RepoError(
-    'Failed',
-    HttpStatus.INTERNAL_SERVER_ERROR,
-    new Prisma.PrismaClientKnownRequestError('Prisma', { code, clientVersion: 'test' }),
-  );
-
-const rejecting = (error: unknown) => jest.fn(() => Promise.reject(error));
+    new RepoError(
+        'Failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        new Prisma.PrismaClientKnownRequestError('Prisma', {
+            code,
+            clientVersion: 'test',
+        }),
+    );
 
 const capturing = () =>
-  jest.fn((params: WriteParams) => Promise.resolve({ id: 'usr_1', ...params.data }));
-
-const firstCall = (mock: ReturnType<typeof capturing>): WriteParams => {
-  const [call] = mock.mock.calls;
-  if (!call) throw new Error('expected the repo to be called');
-  return call[0];
-};
+    jest.fn((params: { data: { passwordHash?: string } }) =>
+        Promise.resolve({ id: 'usr_1', ...params.data }),
+    );
 
 describe('UsersService.create', () => {
-  it('answers 409 when the email is already registered', async () => {
-    const service = await serviceWith({ create: rejecting(prismaFailure(UNIQUE_VIOLATION)) });
+    it('answers 409 when the email is already registered', async () => {
+        const create = jest
+            .fn()
+            .mockRejectedValue(prismaFailure(UNIQUE_VIOLATION));
+        const service = await serviceWith({ create });
 
-    await expect(service.create(DTO)).rejects.toBeInstanceOf(ConflictException);
-  });
+        await expect(service.create(DTO)).rejects.toBeInstanceOf(
+            ConflictException,
+        );
+    });
 
-  it('lets any other failure through unchanged', async () => {
-    const failure = new RepoError(
-      'Failed to create user',
-      HttpStatus.INTERNAL_SERVER_ERROR,
-      new Error('connection lost'),
-    );
-    const service = await serviceWith({ create: rejecting(failure) });
+    it('lets any other failure through unchanged', async () => {
+        const failure = new RepoError(
+            'Failed to create user',
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            new Error('connection lost'),
+        );
+        const service = await serviceWith({
+            create: jest.fn().mockRejectedValue(failure),
+        });
 
-    await expect(service.create(DTO)).rejects.toBe(failure);
-  });
+        await expect(service.create(DTO)).rejects.toBe(failure);
+    });
 
-  it('never stores the plain password', async () => {
-    const create = capturing();
-    await (await serviceWith({ create })).create(DTO);
+    it('never stores the plain password', async () => {
+        const create = capturing();
+        await (await serviceWith({ create })).create(DTO);
 
-    const { data } = firstCall(create);
-    expect(data).not.toHaveProperty('password');
-    await expect(PasswordUtil.compare(DTO.password, data.passwordHash ?? '')).resolves.toBe(true);
-  });
+        const [[{ data }]] = create.mock.calls;
+        expect(data).not.toHaveProperty('password');
+        await expect(
+            PasswordUtil.compare(DTO.password, data.passwordHash ?? ''),
+        ).resolves.toBe(true);
+    });
+});
+
+describe('UsersService.findAll', () => {
+    it('asks the repo for exactly the requested page, in a stable order', async () => {
+        const findMany = jest.fn().mockResolvedValue([]);
+        const service = await serviceWith({ findMany });
+
+        await service.findAll({ limit: 5, offset: 10 });
+
+        expect(findMany).toHaveBeenCalledWith(
+            expect.objectContaining({
+                take: 5,
+                skip: 10,
+                orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+            }),
+        );
+    });
 });
 
 describe('UsersService.findOne', () => {
-  it('answers 404 instead of an empty profile', async () => {
-    const service = await serviceWith({ findUnique: jest.fn(() => Promise.resolve(null)) });
+    it('answers 404 instead of an empty profile', async () => {
+        const service = await serviceWith({
+            findUnique: jest.fn().mockResolvedValue(null),
+        });
 
-    await expect(service.findOne('usr_2')).rejects.toBeInstanceOf(NotFoundException);
-  });
+        await expect(service.findOne('usr_2')).rejects.toBeInstanceOf(
+            NotFoundException,
+        );
+    });
 
-  it('still lets the guard ask without throwing', async () => {
-    const service = await serviceWith({ findUnique: jest.fn(() => Promise.resolve(null)) });
+    it('still lets the guard ask without throwing', async () => {
+        const service = await serviceWith({
+            findUnique: jest.fn().mockResolvedValue(null),
+        });
 
-    await expect(service.findById('usr_2')).resolves.toBeNull();
-  });
+        await expect(service.findById('usr_2')).resolves.toBeNull();
+    });
 });
 
 describe('UsersService.update', () => {
-  it('refuses to let a member edit someone else', async () => {
-    const update = capturing();
-    const service = await serviceWith({ update });
+    it('refuses to let a member edit someone else', async () => {
+        const update = capturing();
+        const service = await serviceWith({ update });
 
-    await expect(service.update(MEMBER, 'usr_2', { fullName: 'Mallory' })).rejects.toBeInstanceOf(
-      ForbiddenException,
-    );
-    expect(update).not.toHaveBeenCalled();
-  });
-
-  it('refuses to let a member promote themselves', async () => {
-    const service = await serviceWith({ update: capturing() });
-
-    await expect(
-      service.update(MEMBER, MEMBER.id, { role: UserRole.ADMIN }),
-    ).rejects.toBeInstanceOf(ForbiddenException);
-  });
-
-  it('lets a member edit their own profile', async () => {
-    const update = capturing();
-    await (await serviceWith({ update })).update(MEMBER, MEMBER.id, { bio: 'Analyst' });
-
-    expect(update).toHaveBeenCalledTimes(1);
-  });
-
-  it("lets an admin change anyone's role", async () => {
-    const update = capturing();
-    await (await serviceWith({ update })).update(ADMIN, 'usr_2', { role: UserRole.ADMIN });
-
-    expect(firstCall(update)).toMatchObject({
-      where: { id: 'usr_2' },
-      data: { role: UserRole.ADMIN },
+        await expect(
+            service.update(MEMBER, 'usr_2', { fullName: 'Mallory' }),
+        ).rejects.toBeInstanceOf(ForbiddenException);
+        expect(update).not.toHaveBeenCalled();
     });
-  });
 
-  it('hashes a new password instead of handing it to Prisma', async () => {
-    const update = capturing();
-    await (await serviceWith({ update })).update(MEMBER, MEMBER.id, { password: 'new-password' });
+    it('refuses to let a member promote themselves', async () => {
+        const service = await serviceWith({ update: capturing() });
 
-    const { data } = firstCall(update);
-    expect(data).not.toHaveProperty('password');
-    await expect(PasswordUtil.compare('new-password', data.passwordHash ?? '')).resolves.toBe(true);
-  });
+        await expect(
+            service.update(MEMBER, MEMBER.id, { role: UserRole.ADMIN }),
+        ).rejects.toBeInstanceOf(ForbiddenException);
+    });
 
-  it('answers 404 for a user that does not exist', async () => {
-    const service = await serviceWith({ update: rejecting(prismaFailure(RECORD_NOT_FOUND)) });
+    it('lets a member edit their own profile', async () => {
+        const update = capturing();
+        await (
+            await serviceWith({ update })
+        ).update(MEMBER, MEMBER.id, { bio: 'Analyst' });
 
-    await expect(service.update(ADMIN, 'usr_2', { bio: 'Analyst' })).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
-  });
+        expect(update).toHaveBeenCalledTimes(1);
+    });
 
-  it('answers 409 when the new email is taken', async () => {
-    const service = await serviceWith({ update: rejecting(prismaFailure(UNIQUE_VIOLATION)) });
+    it("lets an admin change anyone's role", async () => {
+        const update = capturing();
+        await (
+            await serviceWith({ update })
+        ).update(ADMIN, 'usr_2', { role: UserRole.ADMIN });
 
-    await expect(
-      service.update(MEMBER, MEMBER.id, { email: 'taken@example.com' }),
-    ).rejects.toBeInstanceOf(ConflictException);
-  });
+        const [[params]] = update.mock.calls;
+        expect(params).toMatchObject({
+            where: { id: 'usr_2' },
+            data: { role: UserRole.ADMIN },
+        });
+    });
+
+    it('hashes a new password instead of handing it to Prisma', async () => {
+        const update = capturing();
+        await (
+            await serviceWith({ update })
+        ).update(MEMBER, MEMBER.id, { password: 'new-password' });
+
+        const [[{ data }]] = update.mock.calls;
+        expect(data).not.toHaveProperty('password');
+        await expect(
+            PasswordUtil.compare('new-password', data.passwordHash ?? ''),
+        ).resolves.toBe(true);
+    });
+
+    it('answers 404 for a user that does not exist', async () => {
+        const service = await serviceWith({
+            update: jest
+                .fn()
+                .mockRejectedValue(prismaFailure(RECORD_NOT_FOUND)),
+        });
+
+        await expect(
+            service.update(ADMIN, 'usr_2', { bio: 'Analyst' }),
+        ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('answers 409 when the new email is taken', async () => {
+        const service = await serviceWith({
+            update: jest
+                .fn()
+                .mockRejectedValue(prismaFailure(UNIQUE_VIOLATION)),
+        });
+
+        await expect(
+            service.update(MEMBER, MEMBER.id, { email: 'taken@example.com' }),
+        ).rejects.toBeInstanceOf(ConflictException);
+    });
 });
 
 describe('UsersService.remove', () => {
-  it('answers 404 for a user that does not exist', async () => {
-    const service = await serviceWith({ delete: rejecting(prismaFailure(RECORD_NOT_FOUND)) });
+    it('answers 404 for a user that does not exist', async () => {
+        const service = await serviceWith({
+            delete: jest
+                .fn()
+                .mockRejectedValue(prismaFailure(RECORD_NOT_FOUND)),
+        });
 
-    await expect(service.remove('usr_2')).rejects.toBeInstanceOf(NotFoundException);
-  });
+        await expect(service.remove('usr_2')).rejects.toBeInstanceOf(
+            NotFoundException,
+        );
+    });
+
+    it('invalidates the stats cache version after deleting a user', async () => {
+        const incr = jest.fn().mockResolvedValue(1);
+        const service = await serviceWith(
+            { delete: jest.fn().mockResolvedValue({ id: 'usr_2' }) },
+            incr,
+        );
+
+        await service.remove('usr_2');
+
+        expect(incr).toHaveBeenCalledWith(STATS_CACHE_VERSION_KEY);
+    });
 });

@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { HealthStatus } from '../../../../common/enums/health.js';
+import { HealthStatus } from '@common/enums/health';
 
 export class HealthResponseDto {
-  @ApiProperty({ enum: HealthStatus, enumName: 'HealthStatus' })
-  status!: HealthStatus;
+    @ApiProperty({ enum: HealthStatus })
+    status: HealthStatus;
 }

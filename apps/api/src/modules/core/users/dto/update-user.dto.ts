@@ -1,11 +1,12 @@
+import { CreateUserDto } from './create-user.dto';
+import { UserAccountStatus } from 'generated/prisma/enums';
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { IsEnum, IsOptional } from 'class-validator';
-import { UserAccountStatus } from '../../../../generated/prisma/enums.js';
-import { CreateUserDto } from './create-user.dto.js';
+
+import { IsOptional, IsEnum } from 'class-validator';
 
 export class UpdateUserDto extends PartialType(CreateUserDto) {
-  @ApiProperty({ enum: UserAccountStatus, enumName: 'UserAccountStatus', required: false })
-  @IsOptional()
-  @IsEnum(UserAccountStatus)
-  status?: UserAccountStatus;
+    @ApiProperty({ enum: UserAccountStatus, required: false })
+    @IsOptional()
+    @IsEnum(UserAccountStatus)
+    status?: UserAccountStatus;
 }
