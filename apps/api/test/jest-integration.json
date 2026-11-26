@@ -1,0 +1,17 @@
+{
+    "moduleFileExtensions": ["js", "json", "ts"],
+    "rootDir": ".",
+    "testEnvironment": "node",
+    "testRegex": ".integration-spec.ts$",
+    "testTimeout": 120000,
+    "moduleNameMapper": {
+        "^@common/(.*)$": "<rootDir>/../src/common/$1",
+        "^@core/(.*)$": "<rootDir>/../src/modules/core/$1",
+        "^@lib/(.*)$": "<rootDir>/../src/lib/$1",
+        "^generated/(.*)$": "<rootDir>/../generated/$1",
+        "^(\\.{1,2}/.*)\\.js$": "$1"
+    },
+    "transform": {
+        "^.+\\.(t|j)s$": "ts-jest"
+    }
+}
