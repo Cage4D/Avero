@@ -1,8 +1,6 @@
 export const PASSWORD_MIN_LENGTH = 8;
 
-export const JWT_EXPIRES_IN = '7d';
-
-export const INVALID_CREDENTIALS = 'Invalid credentials';
+export const PASSWORD_MAX_LENGTH = 72;
 
 export const USER_EXISTS = 'User already exists';
 

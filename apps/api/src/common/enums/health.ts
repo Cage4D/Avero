@@ -1,3 +1,3 @@
 export enum HealthStatus {
-  OK = 'ok',
+    OK = 'ok',
 }

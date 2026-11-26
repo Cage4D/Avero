@@ -1,6 +1,6 @@
 import type { Request } from 'express';
-import type { AuthUser } from '../../modules/core/auth/types/auth.types.js';
+import type { AuthUser } from '@common/security';
 
 export interface RequestWithUser extends Request {
-  user: AuthUser;
+    user: AuthUser;
 }

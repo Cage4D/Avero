@@ -1,12 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ApiEnvelopeDto {
-  @ApiProperty()
-  statusCode!: number;
+    @ApiProperty()
+    statusCode: number;
 
-  @ApiProperty()
-  message!: string;
+    @ApiProperty()
+    message: string;
 
-  @ApiProperty({ format: 'date-time' })
-  timestamp!: string;
+    @ApiProperty({ format: 'date-time' })
+    timestamp: string;
 }

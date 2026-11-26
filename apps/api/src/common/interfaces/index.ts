@@ -1,1 +1,1 @@
-export * from './req.js';
+export * from './req';
