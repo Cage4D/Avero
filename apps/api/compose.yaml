@@ -1,0 +1,66 @@
+name: nest-setup
+
+x-database-url: &database-url postgresql://postgres:postgres@db:5432/app?schema=public
+x-redis-url: &redis-url redis://redis:6379
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: app
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d app"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  migrate:
+    build:
+      context: .
+      target: migrate
+    environment:
+      DATABASE_URL: *database-url
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      target: runtime
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: *database-url
+      REDIS_URL: *redis-url
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://jaeger:4318/v1/traces
+    ports:
+      - "${PORT:-5000}:${PORT:-5000}"
+      - "127.0.0.1:${ADMIN_PORT:-6060}:${ADMIN_PORT:-6060}"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+
+  jaeger:
+    image: jaegertracing/jaeger:2.23.0
+    ports:
+      - "127.0.0.1:16686:16686"
+
+volumes:
+  db-data:

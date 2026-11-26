@@ -1,16 +1,30 @@
 {
-  "extends": "../../packages/config/tsconfig/nestjs.json",
   "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "resolvePackageJsonExports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2023",
+    "sourceMap": true,
     "outDir": "./dist",
-    "rootDir": ".",
-    "types": ["node", "jest"],
-    // Vercel's Node builder type-checks this ESM package but resolves helmet to
-    // its CommonJS declarations, so `helmet()` fails to type-check there. Pin
-    // the ESM declarations that Node and local tsc already use.
+    "baseUrl": "./",
     "paths": {
-      "helmet": ["./node_modules/helmet/index.d.mts"]
-    }
-  },
-  "include": ["src", "test", "scripts", "prisma", "prisma.config.ts"],
-  "exclude": ["node_modules", "dist"]
+      "@common/*": ["src/common/*"],
+      "@core/*": ["src/modules/core/*"],
+      "@lib/*": ["src/lib/*"]
+    },
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "noFallthroughCasesInSwitch": false
+  }
 }
